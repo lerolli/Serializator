@@ -2,6 +2,7 @@ package Serializator;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -92,19 +93,32 @@ public class Serialization {
 
         // Получаем известные поля класса и проходимся по ним
         for (var field : classObj.getDeclaredFields()) {
+            String name = "";
+            Object valueOf = null;
 
             // Получаем имя типа поля ("int", "byte" и так далее)
             String fieldName = Converter.getNameTypeFromByte(getFromByteArray(classBytes));
-            if (fieldName == null)
-                continue;
+            if (customSerialize.containsKey(fieldName)){
+                var customSerializeArray = Arrays.copyOfRange(raw, indexDeserialize, raw.length - 1);
+                Field f = customSerialize.get(fieldName).Deserialize(customSerializeArray);
+                name = f.getName();
+                try {
+                    valueOf = f.get(f);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+            else {
+                if (fieldName == null)
+                    continue;
 
-            if (!fieldName.equals(field.getType().getName()))
-                return null;
+                if (!fieldName.equals(field.getType().getName()))
+                    return null;
 
-            // Получаем имя и значение переменной
-            var name = Converter.byteToString(getFromByteArray(classBytes));
-            var valueOf = Converter.ByteToType(fieldName, getFromByteArray(classBytes));
-
+                // Получаем имя и значение переменной
+                name = Converter.byteToString(getFromByteArray(classBytes));
+                valueOf = Converter.ByteToType(fieldName, getFromByteArray(classBytes));
+            }
             // Пытаемся записать в поле значение
             if (valueOf != null) {
                 try {
