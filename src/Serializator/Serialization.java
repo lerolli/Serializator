@@ -5,9 +5,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 
-public class Serialization implements ISerialize {
-
+public class Serialization {
+    private final HashMap<String, ISerialize> customSerialize = new HashMap<>();
+    private int indexDeserialize = 0;
     public <T> byte[] Serialize(T o){
 
         if (o == null)
@@ -31,27 +33,31 @@ public class Serialization implements ISerialize {
 
                 // Записываем длину имени типа переменной и тип переменной
                 var fieldTypeName = field.getType().getName();
-                var fieldTypeNameToByte = Converter.convertNameTypeToByte(fieldTypeName);
+                var fieldTypeNameToByte = Converter.convertNameTypeVariableToByte(fieldTypeName);
 
-                // Если null, то это какой-то пользовательский класс
-                if (fieldTypeNameToByte != null)
-                    result.write(fieldTypeNameToByte);
-                else
-                    result.write(Serialize(field.get(o)));
-                result.write('|');
-
-                // Записываем длину имени переменной и имя переменной
-                var fieldNameBytes = field.getName().getBytes(StandardCharsets.UTF_8);
-                result.write(fieldNameBytes);
-                result.write('|');
-
-                var valueField = field.get(o);
-                if (valueField != null){
-                    result.write(Converter.convertValueToByte(fieldTypeName, valueField));
+                if (customSerialize.containsKey(fieldTypeNameToByte)){
+                    customSerialize.get(fieldTypeName).Serialize(field);
                 }
+                else {
 
-                result.write('|');
+                    // Если null, то это какой-то пользовательский класс
+                    if (fieldTypeNameToByte != null)
+                        result.write(fieldTypeNameToByte);
+                    else
+                        result.write(Serialize(field.get(o)));
+                    result.write('|');
 
+                    // Записываем длину имени переменной и имя переменной
+                    var fieldNameBytes = field.getName().getBytes(StandardCharsets.UTF_8);
+                    result.write(fieldNameBytes);
+                    result.write('|');
+
+                    var valueField = field.get(o);
+                    if (valueField != null) {
+                        result.write(Converter.convertValueToByte(fieldTypeName, valueField));
+                    }
+                    result.write('|');
+                }
             }
 
             result.write(new byte[] {(byte)')'});
@@ -62,7 +68,7 @@ public class Serialization implements ISerialize {
         return result.toByteArray();
     }
 
-    public <T extends Object> T Deserialize (byte[] raw) {
+    public <T> T Deserialize (byte[] raw) {
 
         // Делаем проверку, что наш пакет пришел целым
         if (raw.length == 2 || (raw[0] != 40 && raw[raw.length - 1] != 41))
@@ -70,18 +76,9 @@ public class Serialization implements ISerialize {
 
         var classBytes = Arrays.copyOfRange(raw, 1, raw.length - 1);
 
-        var nameArray = new ArrayList<Byte>();
-        var index = 1;
-        byte tempBytes = classBytes[index];
-
         // Получаем название класса из массива байт
-        while (tempBytes != 124) {
-            nameArray.add(tempBytes);
-            index++;
-            tempBytes = classBytes[index];
-        }
+        var className = Converter.byteToString(getFromByteArray(classBytes));
 
-        String className = Converter.byteToString(nameArray);
         // Получаем сам класс
         Class classObj = null;
         try {
@@ -97,61 +94,42 @@ public class Serialization implements ISerialize {
         for (var field : classObj.getDeclaredFields()) {
 
             // Получаем имя типа поля ("int", "byte" и так далее)
-            index++;
-            var tempArray = new ArrayList<Byte>();
-            tempBytes = classBytes[index];
-            while (tempBytes != 124) {
-                tempArray.add(tempBytes);
-                index++;
-                tempBytes = classBytes[index];
-            }
-            String fieldName = Converter.getNameTypeFromByte(tempArray.get(tempArray.size() - 1));
+            String fieldName = Converter.getNameTypeFromByte(getFromByteArray(classBytes));
             if (fieldName == null)
                 continue;
 
             if (!fieldName.equals(field.getType().getName()))
                 return null;
 
-            // Получаем имя переменной
-            index++;
-            tempArray = new ArrayList<Byte>();
-            tempBytes = classBytes[index];
-            while (tempBytes != 124) {
-                tempArray.add(tempBytes);
-                index++;
-                tempBytes = classBytes[index];
-            }
+            // Получаем имя и значение переменной
+            var name = Converter.byteToString(getFromByteArray(classBytes));
+            var valueOf = Converter.ByteToType(fieldName, getFromByteArray(classBytes));
 
-            var name = Converter.byteToString(tempArray);
-
-            index++;
-            tempArray = new ArrayList<Byte>();
-            tempBytes = classBytes[index];
-            while (tempBytes != 124) {
-                tempArray.add(tempBytes);
-                index++;
-                tempBytes = classBytes[index];
-            }
-
-
-            var valueOf = Converter.ByteToType(fieldName, tempArray);
-
-
+            // Пытаемся записать в поле значение
             if (valueOf != null) {
                 try {
-                    try {
-                    classObj.getField(name).set(classObj, valueOf);
-                } catch (IllegalAccessException | NoSuchFieldException e) {
+                    field.set(classObj, valueOf);
+                } catch (IllegalAccessException e) {
                     e.printStackTrace();
                 }
-                // Пытаемся записать в поле значение
-
+            }
         }
-
         return (T) classObj;
     }
 
-    public void AddCustom(Serialization a){
+    private ArrayList<Byte> getFromByteArray(byte[] classBytes){
+        indexDeserialize++;
+        var tempArray = new ArrayList<Byte>();
+        var tempBytes = classBytes[indexDeserialize];
+        while (tempBytes != 124) {
+            tempArray.add(tempBytes);
+            indexDeserialize++;
+            tempBytes = classBytes[indexDeserialize];
+        }
+        return tempArray;
+    }
 
+    public void AddCustom(ISerialize a){
+        customSerialize.put(a.type, a);
     }
 }

@@ -31,107 +31,42 @@ public class Converter {
         put(9, "float");
     }};
 
-
-    public static byte[] convertNameTypeToByte(String type){
-        if (codeOfTypeVariable.containsKey(type)){
-            switch (codeOfTypeVariable.get(type)){
-                case 1:{
-                    return  ByteBuffer.allocate(4).putInt(1).array();
-                }
-
-                case 2:{
-                    return  ByteBuffer.allocate(4).putInt(2).array();
-                }
-
-                case 3:{
-                    return  ByteBuffer.allocate(4).putInt(3).array();
-                }
-
-                case 4:{
-                    return  ByteBuffer.allocate(4).putInt(4).array();
-                }
-
-                case 5:{
-                    return  ByteBuffer.allocate(4).putInt(5).array();
-                }
-
-                case 6:{
-                    return  ByteBuffer.allocate(4).putInt(6).array();
-                }
-                case 7:{
-                    return ByteBuffer.allocate(4).putInt(7).array();
-                }
-                case 8:{
-                    return ByteBuffer.allocate(4).putInt(8).array();
-                }
-
-                case 9:{
-                    return ByteBuffer.allocate(4).putInt(9).array();
-                }
-                default:
-                    return null;
-            }
+    public static byte[] convertNameTypeVariableToByte(String type) {
+        if (codeOfTypeVariable.containsKey(type)) {
+            return switch (codeOfTypeVariable.get(type)) {
+                case 1 -> ByteBuffer.allocate(4).putInt(1).array();
+                case 2 -> ByteBuffer.allocate(4).putInt(2).array();
+                case 3 -> ByteBuffer.allocate(4).putInt(3).array();
+                case 4 -> ByteBuffer.allocate(4).putInt(4).array();
+                case 5 -> ByteBuffer.allocate(4).putInt(5).array();
+                case 6 -> ByteBuffer.allocate(4).putInt(6).array();
+                case 7 -> ByteBuffer.allocate(4).putInt(7).array();
+                case 8 -> ByteBuffer.allocate(4).putInt(8).array();
+                case 9 -> ByteBuffer.allocate(4).putInt(9).array();
+                default -> null;
+            };
         }
         return null;
     }
 
     public static byte[] convertValueToByte (String name, Object value){
 
-            switch (codeOfTypeVariable.get(name)){
-                //int
-                case 1:{
-                    return  ByteBuffer.allocate(4).putInt((Integer) value).array();
-                }
-
-                //byte
-                case 2:{
-                    return  new byte[] {(byte) value};
-                }
-
-                //short
-                case 3:{
-                    return  ByteBuffer.allocate(2).putShort((Short) value).array();
-                }
-
-                //long
-                case 4:{
-                    return  ByteBuffer.allocate(8).putLong((Long) value).array();
-                }
-
-                //double
-                case 5:{
-                    return  ByteBuffer.allocate(8).putDouble((Double) value).array();
-                }
-
-                //char
-                case 6:{
-                    return  new byte[] {(byte) ((char) value)};
-                }
-
-                //bool
-                case 7:{
-                    int number = ((boolean) value) ? 1 : 0;
-                    return ByteBuffer.allocate(4).putInt (number).array();
-                }
-
-                //java.lang.String
-                case 8:{
-                    return value.toString().getBytes();
-                }
-
-                //float
-                case 9:{
-                    return ByteBuffer.allocate(4).putFloat((Float) value).array();
-                }
-
-                default:
-                    return null;
-            }
+        return switch (codeOfTypeVariable.get(name)){
+            case 1 -> ByteBuffer.allocate(4).putInt((Integer) value).array();
+            case 2 -> new byte[] {(byte) value};
+            case 3 -> ByteBuffer.allocate(2).putShort((Short) value).array();
+            case 4 -> ByteBuffer.allocate(8).putLong((Long) value).array();
+            case 5 -> ByteBuffer.allocate(8).putDouble((Double) value).array();
+            case 6 -> new byte[] {(byte) ((char) value)};
+            case 7 -> ByteBuffer.allocate(4).putInt (((boolean) value) ? 1 : 0).array();
+            case 8 -> value.toString().getBytes();
+            case 9 -> ByteBuffer.allocate(4).putFloat((Float) value).array();
+            default -> null;
+        };
     }
 
-
-    public static String getNameTypeFromByte(byte number){
-        return codeOfVariableType.get((int) number);
+    public static String getNameTypeFromByte(ArrayList<Byte> number){
+        return codeOfVariableType.get((int) number.get(number.size() - 1));
     }
 
     public static String byteToString (ArrayList<Byte> arrayList){

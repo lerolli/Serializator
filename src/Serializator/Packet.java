@@ -1,7 +1,10 @@
 package Serializator;
 
+import java.util.Date;
+
 class Packet {
-    public int i;
     public String s;
+    public int i;
     public double d;
+    public Date date;
 }
