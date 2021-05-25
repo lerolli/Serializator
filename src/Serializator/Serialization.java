@@ -1,5 +1,7 @@
 package Serializator;
 
+import Serializator.packets.Packet;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -11,16 +13,13 @@ import java.util.HashMap;
 public class Serialization {
     private final HashMap<String, ISerialize> customSerialize = new HashMap<>();
     private int indexDeserialize = 0;
+
     public <T> byte[] Serialize(T o){
 
-        if (o == null)
-            return new byte[]{(byte) '(', (byte) ')'};
-
         var result = new ByteArrayOutputStream();
-
         try {
-            // ( - начало массива байт, ) - конец массива байт
-            result.write((byte)'(');
+            if (o == null)
+                return new byte[0];
 
             // Записываем длину имени класса и имя класса
             var oClass = o.getClass();
@@ -37,31 +36,31 @@ public class Serialization {
                 var fieldTypeNameToByte = Converter.convertNameTypeVariableToByte(fieldTypeName);
 
                 if (customSerialize.containsKey(fieldTypeNameToByte)){
-                    customSerialize.get(fieldTypeName).Serialize(field);
+                    result.write(customSerialize.get(fieldTypeName).Serialize(field));
                 }
                 else {
 
                     // Если null, то это какой-то пользовательский класс
-                    if (fieldTypeNameToByte != null)
+                    if (fieldTypeNameToByte != null) {
                         result.write(fieldTypeNameToByte);
+                        var fieldNameBytes = field.getName().getBytes(StandardCharsets.UTF_8);
+                        result.write(fieldNameBytes);
+                        result.write('|');
+
+                        var valueField = field.get(o);
+                        if (valueField != null) {
+                            result.write(Converter.convertValueToByte(fieldTypeName, valueField));
+                        }
+                        result.write('|');
+                    }
                     else
                         result.write(Serialize(field.get(o)));
                     result.write('|');
 
                     // Записываем длину имени переменной и имя переменной
-                    var fieldNameBytes = field.getName().getBytes(StandardCharsets.UTF_8);
-                    result.write(fieldNameBytes);
-                    result.write('|');
 
-                    var valueField = field.get(o);
-                    if (valueField != null) {
-                        result.write(Converter.convertValueToByte(fieldTypeName, valueField));
-                    }
-                    result.write('|');
                 }
             }
-
-            result.write(new byte[] {(byte)')'});
 
         } catch (IOException | IllegalAccessException e) {
             e.printStackTrace();
@@ -69,24 +68,17 @@ public class Serialization {
         return result.toByteArray();
     }
 
-    public <T> T Deserialize (byte[] raw) {
-
-        // Делаем проверку, что наш пакет пришел целым
-        if (raw.length == 2 || (raw[0] != 40 && raw[raw.length - 1] != 41))
-            return null;
-
-        var classBytes = Arrays.copyOfRange(raw, 1, raw.length - 1);
+    public <T extends Object> T Deserialize (byte[] classBytes) {
 
         // Получаем название класса из массива байт
         var className = Converter.byteToString(getFromByteArray(classBytes));
 
         // Получаем сам класс
-        Class classObj = null;
+        Class<Object> classObj = null;
         try {
-            classObj = Class.forName(className);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+            classObj = (Class<Object>) Class.forName(className);
+        } catch (ClassNotFoundException ignored) { }
+
 
         if (classObj == null)
             return null;
@@ -99,7 +91,7 @@ public class Serialization {
             // Получаем имя типа поля ("int", "byte" и так далее)
             String fieldName = Converter.getNameTypeFromByte(getFromByteArray(classBytes));
             if (customSerialize.containsKey(fieldName)){
-                var customSerializeArray = Arrays.copyOfRange(raw, indexDeserialize, raw.length - 1);
+                var customSerializeArray = Arrays.copyOfRange(classBytes, indexDeserialize, classBytes.length - 1);
                 Field f = customSerialize.get(fieldName).Deserialize(customSerializeArray);
                 name = f.getName();
                 try {
@@ -109,8 +101,12 @@ public class Serialization {
                 }
             }
             else {
-                if (fieldName == null)
-                    continue;
+                if (fieldName == null) {
+                    Field tempField = Deserialize(classBytes);
+                    if (tempField == null)
+                        continue;
+                    field = tempField;
+                }
 
                 if (!fieldName.equals(field.getType().getName()))
                     return null;
@@ -122,8 +118,9 @@ public class Serialization {
             // Пытаемся записать в поле значение
             if (valueOf != null) {
                 try {
-                    field.set(classObj, valueOf);
-                } catch (IllegalAccessException e) {
+                    var f = classObj.newInstance();
+                    field.set(f, valueOf);
+                } catch (IllegalAccessException | InstantiationException e) {
                     e.printStackTrace();
                 }
             }

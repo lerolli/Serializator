@@ -66,7 +66,10 @@ public class Converter {
     }
 
     public static String getNameTypeFromByte(ArrayList<Byte> number){
-        return codeOfVariableType.get((int) number.get(number.size() - 1));
+        if (number.size() == 0)
+            return null;
+        else
+            return codeOfVariableType.get((int) number.get(number.size() - 1));
     }
 
     public static String byteToString (ArrayList<Byte> arrayList){
