@@ -1,5 +1,3 @@
-package Serializator;
-
 public interface ISerialize {
     String type = null;
     public <T> byte[] Serialize(T o);

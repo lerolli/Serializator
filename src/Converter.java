@@ -1,5 +1,3 @@
-package Serializator;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
