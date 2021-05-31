@@ -2,19 +2,18 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 
 public class Serialization {
     private final HashMap<String, ISerialize> customSerialize = new HashMap<>();
     private int indexDeserialize = -1;
+
     public <T> byte[] Serialize(T o){
 
         if (o == null)
             return new byte[0];
 
         var result = new ByteArrayOutputStream();
-
         try {
 
             // Записываем длину имени класса и имя класса
@@ -30,17 +29,27 @@ public class Serialization {
                 var fieldTypeName = field.getType().getName();
                 var fieldTypeNameToByte = Converter.convertNameTypeVariableToByte(fieldTypeName);
 
-                if (customSerialize.containsKey(fieldTypeNameToByte)){
-                    customSerialize.get(fieldTypeName).Serialize(field);
-                }
-                else {
 
+                if (field.getType().isArray()) {
+                    var classArrayName = field.getType().getComponentType().getName();
+                    Collections array = (Collections) field.get(o);
+                }
+
+                // Проверка на произвольный тип
+                if (customSerialize.containsKey(fieldTypeName)){
+                    result.write(customSerialize.get(fieldTypeName).Serialize(field));
+                }
+
+                else {
                     // Если null, то это какой-то пользовательский класс
-                    if (fieldTypeNameToByte == null)
+                    if (fieldTypeNameToByte == null) {
                         result.write(Serialize(field.get(o)));
+                    }
                     else {
+
                         result.write(fieldTypeNameToByte);
                         result.write('|');
+
                         // Записываем длину имени переменной и имя переменной
                         var fieldNameBytes = field.getName().getBytes(StandardCharsets.UTF_8);
                         result.write(fieldNameBytes);
@@ -75,21 +84,21 @@ public class Serialization {
             return null;
 
         // Получаем сам класс
-        Class classObj = Class.forName(className);
+        Class<?> classObj = Class.forName(className);
         Object object = classObj.getConstructor().newInstance();
 
 
 
         // Получаем известные поля класса и проходимся по ним
         for (var field : classObj.getDeclaredFields()) {
-            String name = "";
             Object valueOf = null;
             Object f = null;
             // Получаем имя типа поля ("int", "byte" и так далее)
             var tempIndex = indexDeserialize;
             String fieldName = Converter.getNameTypeFromByte(getFromByteArray(classBytes));
             if (customSerialize.containsKey(fieldName)){
-                f = customSerialize.get(fieldName).Deserialize(classBytes);
+                var customSerializeArray = Arrays.copyOfRange(classBytes, indexDeserialize, classBytes.length - 1);
+                f = customSerialize.get(fieldName).Deserialize(customSerializeArray);
 
             }
             else {
@@ -102,7 +111,7 @@ public class Serialization {
                     valueOf = f;
                 } else {
                     // Получаем имя и значение переменной
-                    name = Converter.byteToString(getFromByteArray(classBytes));
+                    Converter.byteToString(getFromByteArray(classBytes));
                     valueOf = Converter.ByteToType(fieldName, getFromByteArray(classBytes));
                 }
             }
@@ -135,6 +144,10 @@ public class Serialization {
     }
 
     public void AddCustom(ISerialize a){
-        customSerialize.put(a.type, a);
+        customSerialize.put(a.setTypeSerialize(), a);
+    }
+
+    public int getIndexDeserialize(){
+        return indexDeserialize;
     }
 }
