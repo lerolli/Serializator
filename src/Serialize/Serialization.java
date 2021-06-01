@@ -1,5 +1,8 @@
+package Serialize;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -29,14 +32,19 @@ public class Serialization {
                 var fieldTypeName = field.getType().getName();
                 var fieldTypeNameToByte = Converter.convertNameTypeVariableToByte(fieldTypeName);
 
-
+                // Проверка, что поле является массивом
                 if (field.getType().isArray()) {
                     var classArrayName = field.getType().getComponentType().getName();
-                    Collections array = (Collections) field.get(o);
-                }
-
-                // Проверка на произвольный тип
-                if (customSerialize.containsKey(fieldTypeName)){
+                    var arrayType = field.getType();
+                    var array = field.get(o);
+//                    for (var arrayValue : array){
+//
+//                        if (arrayType.isPrimitive()){
+//                            result.write(convertPrimitiveVariable(field, o));
+//                        }
+//                    }
+                } // Проверка на произвольный тип
+                else if (customSerialize.containsKey(fieldTypeName)){
                     result.write(customSerialize.get(fieldTypeName).Serialize(field));
                 }
 
@@ -46,20 +54,7 @@ public class Serialization {
                         result.write(Serialize(field.get(o)));
                     }
                     else {
-
-                        result.write(fieldTypeNameToByte);
-                        result.write('|');
-
-                        // Записываем длину имени переменной и имя переменной
-                        var fieldNameBytes = field.getName().getBytes(StandardCharsets.UTF_8);
-                        result.write(fieldNameBytes);
-                        result.write('|');
-
-                        var valueField = field.get(o);
-                        if (valueField != null) {
-                            result.write(Converter.convertValueToByte(fieldTypeName, valueField));
-                        }
-                        result.write('|');
+                        result.write(convertPrimitiveVariable(field, o));
                     }
                 }
             }
@@ -141,6 +136,31 @@ public class Serialization {
             tempBytes = classBytes[indexDeserialize];
         }
         return tempArray;
+    }
+
+    private byte[] convertPrimitiveVariable(Field field, Object o){
+
+        var result = new ByteArrayOutputStream();
+
+        try {
+            result.write(Converter.convertNameTypeVariableToByte(field.getType().getName()));
+            result.write('|');
+
+            // Записываем длину имени переменной и имя переменной
+            var fieldNameBytes = field.getName().getBytes(StandardCharsets.UTF_8);
+            result.write(fieldNameBytes);
+            result.write('|');
+
+            var valueField = field.get(o);
+            if (valueField != null) {
+                result.write(Converter.convertValueToByte(field.getType().getName(), valueField));
+            }
+            result.write('|');
+
+        } catch (IOException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        return result.toByteArray();
     }
 
     public void AddCustom(ISerialize a){

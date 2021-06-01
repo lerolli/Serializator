@@ -1,13 +1,16 @@
-import java.lang.reflect.Array;
+import Point.*;
+import Serialize.*;
+import packets.*;
+
 import java.lang.reflect.InvocationTargetException;
 
 public class Program {
     public static void main(String[] args) {
 
         var serialization = new Serialization();
-//        checkEqualsSimpleClass(serialization);
-//        checkEqualsClassInClass(serialization);
-//        checkEqualsPointClass(serialization);
+        checkEqualsSimpleClass(serialization);
+        checkEqualsClassInClass(serialization);
+        checkEqualsPointClass(serialization);
         checkEqualsArrayClass(serialization);
     }
 
@@ -67,7 +70,7 @@ public class Program {
 
     private static void checkEqualsSimpleClass(Serialization serialization) {
         var packet = new PacketSimple();
-        packet.s = "sdfvnjdbnjdnjfdbjibfj";
+        packet.s = "Str";
         packet.i = 11;
         packet.d = 112;
         var serializeResult = serialization.Serialize(packet);

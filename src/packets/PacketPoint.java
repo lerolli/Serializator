@@ -1,6 +1,11 @@
+package packets;
+
+
+import Point.Point;
+
 
 public class PacketPoint {
-    Point z;
+    public Point z;
 
     @Override
     public boolean equals(Object o) {

@@ -1,7 +1,9 @@
+package packets;
+
 import java.util.Arrays;
 
 public class PacketArray {
-    int[] intArray;
+    public int[] intArray;
 
 
     @Override

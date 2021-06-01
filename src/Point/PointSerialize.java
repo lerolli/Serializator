@@ -1,3 +1,8 @@
+package Point;
+
+import Serialize.Converter;
+import Serialize.ISerialize;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -13,11 +18,12 @@ public class PointSerialize implements ISerialize {
     }
 
     @Override
-    public <T> byte[] Serialize(T o){
+    public <T> byte[] Serialize(Object o){
 
         if (o == null)
             return new byte[0];
         var result = new ByteArrayOutputStream();
+
 
         try {
             var namePoint = ((Field) o).getType().getName();
@@ -26,6 +32,7 @@ public class PointSerialize implements ISerialize {
             point = Class.forName(namePoint);
             var a = point.getDeclaredField("x");
             var v= a.get(o);
+
             // Записываем длину имени класса и имя класса
             result.write("Point".getBytes());
             result.write('|');
