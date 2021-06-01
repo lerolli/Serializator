@@ -14,7 +14,7 @@ public class PointSerialize implements ISerialize {
 
     @Override
     public String setTypeSerialize() {
-        return "Point";
+        return "Point.Point";
     }
 
     @Override
@@ -31,6 +31,8 @@ public class PointSerialize implements ISerialize {
 
             point = Class.forName(namePoint);
             var a = point.getDeclaredField("x");
+            a.setAccessible(true);
+            var ppp = a.getInt(o);
             var v= a.get(o);
 
             // Записываем длину имени класса и имя класса

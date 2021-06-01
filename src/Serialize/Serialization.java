@@ -88,16 +88,25 @@ public class Serialization {
         for (var field : classObj.getDeclaredFields()) {
             Object valueOf = null;
             Object f = null;
+
             // Получаем имя типа поля ("int", "byte" и так далее)
             var tempIndex = indexDeserialize;
-            String fieldName = Converter.getNameTypeFromByte(getFromByteArray(classBytes));
+            var arr = getFromByteArray(classBytes);
+            var fieldName = Converter.getNameTypeFromByte(arr);
+            var isNotPrimitive = false;
+
+            if (fieldName == null) {
+                isNotPrimitive = true;
+                fieldName = Converter.byteToString(arr);
+            }
+
             if (customSerialize.containsKey(fieldName)){
                 var customSerializeArray = Arrays.copyOfRange(classBytes, indexDeserialize, classBytes.length - 1);
                 f = customSerialize.get(fieldName).Deserialize(customSerializeArray);
 
             }
             else {
-                if (fieldName == null) {
+                if (isNotPrimitive) {
                     indexDeserialize = tempIndex;
                     f = Deserialize(classBytes);
                 }

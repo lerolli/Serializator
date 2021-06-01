@@ -11,27 +11,24 @@ public class Program {
         checkEqualsSimpleClass(serialization);
         checkEqualsClassInClass(serialization);
         checkEqualsPointClass(serialization);
-        checkEqualsArrayClass(serialization);
+        checkEqualsArrayInClass(serialization);
     }
 
-    private static void checkEqualsArrayClass(Serialization serialization) {
-        var packetArray = new PacketArray();
-        packetArray.intArray = new int[2];
-        packetArray.intArray[0] = 1;
-        packetArray.intArray[1] = 1;
-        var serializeResult = serialization.Serialize(packetArray);
-        PacketArray deserializeResult = null;
-
+    private static void checkEqualsArrayInClass(Serialization serialization) {
+        var packet = new PacketArray();
+        packet.intArray = new int[2];
+        packet.intArray[0]= 1;
+        packet.intArray[1]= 2;
+        Point newPacket = null;
         try {
-            deserializeResult = serialization.Deserialize(serializeResult);
+            newPacket = serialization.Deserialize(serialization.Serialize(packet));
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
             e.printStackTrace();
         }
-        if (packetArray.equals(deserializeResult))
+        if (packet.equals(newPacket))
             System.out.println("Классы равны");
         else
             System.out.println("Классы не равны");
-
 
     }
 
